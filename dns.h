@@ -6,8 +6,10 @@
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 #include <netinet/ip.h>
+#include <netinet/in.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <linux/if_ether.h>
@@ -16,6 +18,7 @@
 #include <netinet/ip6.h>
 #include <arpa/inet.h>
 #include <arpa/nameser.h>
+#include <resolv.h>
 
 #include <libubox/avl-cmp.h>
 #include <libubox/utils.h>
@@ -24,11 +27,6 @@
 #include <libubus.h>
 #include <uci.h>
 #include <uci_blob.h>
-#include <stdint.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <arpa/nameser.h>
-#include <resolv.h>
 
 #define FLAG_RESPONSE		0x8000
 #define FLAG_AUTHORATIVE	0x0400

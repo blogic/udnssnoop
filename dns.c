@@ -161,7 +161,7 @@ parse_answer(uint8_t *buffer, int len, uint8_t **b, int *rlen)
 		return 0;
 	}
 
-	printf("%s %s %d\n", name, ipbuf, a->ttl);
+	printf("%s %s %" PRIu32 "\n", name, ipbuf, a->ttl);
 
 	return 0;
 }

@@ -36,8 +36,10 @@ static const struct sock_fprog sock_filter = {
 };
 
 static struct ubus_auto_conn conn;
-static char *ifname;
 static struct uloop_fd fd;
+static struct blob_buf b;
+static char *ifname;
+static int qosify;
 
 static struct ubus_object_type ubus_object_type = {
 	.name = "dnssnoop"
@@ -174,11 +176,88 @@ snoop_start(void)
 	uloop_fd_add(&fd, ULOOP_READ);
 }
 
+void
+ubus_notify_qosify(char *name, char *address, int type, int ttl)
+{
+	if (!qosify)
+		return;
+
+	blob_buf_init(&b, 0);
+	switch (type) {
+	case TYPE_AAAA:
+		blobmsg_add_string(&b, "type", "AAAA");
+		break;
+	case TYPE_A:
+		blobmsg_add_string(&b, "type", "A");
+		break;
+	default:
+		return;
+	}
+	blobmsg_add_string(&b, "name", name);
+	blobmsg_add_string(&b, "address", address);
+        blobmsg_add_u32(&b, "ttl", ttl);
+
+	ubus_invoke(&conn.ctx, qosify, "add_dns_host", NULL, NULL, NULL, 200);
+}
+
+static void
+ubus_handle_status(struct ubus_context *ctx,  struct ubus_event_handler *ev,
+	      const char *type, struct blob_attr *msg)
+{
+	enum {
+		EVENT_ID,
+		EVENT_PATH,
+		__EVENT_MAX
+	};
+
+	static const struct blobmsg_policy status_policy[__EVENT_MAX] = {
+		[EVENT_ID] = { .name = "id", .type = BLOBMSG_TYPE_INT32 },
+		[EVENT_PATH] = { .name = "path", .type = BLOBMSG_TYPE_STRING },
+	};
+
+	struct blob_attr *tb[__EVENT_MAX];
+	uint32_t id;
+	char *path;
+
+	blobmsg_parse(status_policy, __EVENT_MAX, tb, blob_data(msg), blob_len(msg));
+	if (!tb[EVENT_ID] || !tb[EVENT_PATH])
+		return;
+
+	path = blobmsg_get_string(tb[EVENT_PATH]);
+	id = blobmsg_get_u32(tb[EVENT_ID]);
+
+	if (strcmp(path, "qosify"))
+		return;
+
+	if (!strcmp("ubus.object.remove", type))
+		qosify = 0;
+
+	if (!strcmp("ubus.object.add", type))
+		qosify = id;
+}
+
+static void
+ubus_lookup_cb(struct ubus_context *ctx, struct ubus_object_data *obj,
+                    void *priv)
+{
+	if (strcmp(obj->path, "qosify"))
+		return;
+
+	qosify = obj->id;
+}
+
+static struct ubus_event_handler ubus_status_handler = { .cb = ubus_handle_status };
+
 static void
 ubus_connect_handler(struct ubus_context *ctx)
 {
         ULOG_NOTE("connected to ubus\n");
 	ubus_add_object(ctx, &ubus_object);
+
+	ubus_register_event_handler(ctx, &ubus_status_handler, "ubus.object.add");
+	ubus_register_event_handler(ctx, &ubus_status_handler, "ubus.object.remove");
+
+	ubus_lookup(ctx, NULL, ubus_lookup_cb, NULL);
 }
 
 int

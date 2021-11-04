@@ -161,6 +161,7 @@ parse_answer(uint8_t *buffer, int len, uint8_t **b, int *rlen)
 		return 0;
 	}
 
+	ubus_notify_qosify(name, ipbuf, a->type, a->ttl);
 	printf("%s %s %" PRIu32 "\n", name, ipbuf, a->ttl);
 
 	return 0;
@@ -203,11 +204,12 @@ dns_handle_packet(uint8_t *buffer, int len)
 		if (parse_answer(buffer, len, &b, &rlen))
 			return;
 
-	while (h->authority-- > 0)
+/*	while (h->authority-- > 0)
 		if (parse_answer(buffer, len, &b, &rlen))
 			return;
 
 	while (h->additional-- > 0)
 		if (parse_answer(buffer, len, &b, &rlen))
 			return;
+*/
 }

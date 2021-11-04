@@ -81,5 +81,6 @@ struct dns_question {
 } __attribute__((packed));
 
 void dns_handle_packet(uint8_t *buffer, int len);
+void ubus_notify_qosify(char *name, char *address, int type, int ttl);
 
 #endif

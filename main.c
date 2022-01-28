@@ -197,7 +197,7 @@ ubus_notify_qosify(char *name, char *address, int type, int ttl)
 	blobmsg_add_string(&b, "address", address);
         blobmsg_add_u32(&b, "ttl", ttl);
 
-	ubus_invoke(&conn.ctx, qosify, "add_dns_host", NULL, NULL, NULL, 200);
+	ubus_invoke(&conn.ctx, qosify, "add_dns_host", b.head, NULL, NULL, 200);
 }
 
 static void
